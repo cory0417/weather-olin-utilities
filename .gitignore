@@ -3,3 +3,6 @@ API_KEY.txt
 
 ## working file
 api_request
+
+## Ignore utility bill data
+data/*
