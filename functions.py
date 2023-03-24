@@ -44,18 +44,27 @@ def get_data_api(
 
     json_name = f"{datatype_id}.json"
 
-    with open(json_name, "w", encoding="utf-8") as f:
+    with open("./data/" + json_name, "w", encoding="utf-8") as f:
         json.dump(response_json, f, ensure_ascii=False, indent=4)
 
-    with open(json_name, encoding="utf-8") as f:
-        d = json.loads(f.read())
 
+def flatten_json(json_name):
     # Flatten data
+    with open("./data/" + json_name, encoding="utf-8") as f:
+        d = json.loads(f.read())
     df = pd.json_normalize(d, record_path=["results"])
     return df
 
 
-def plot_data(df):
+def join_dataframes(df_weather, df_util):
+    df_util["date"] = pd.to_datetime(df_util["Start Read Date"])
+    df_util["year-month"] = df_util["date"].dt.strftime("%Y-%m")
+    df_weather["datetime"] = pd.to_datetime(df_weather["date"])
+    df_weather["year-month"] = df_weather["datetime"].dt.strftime("%Y-%m")
+    print(df_weather)
+
+
+def plot_data(df_weather, df_util):
     """
     Plots the data from the given pandas dataframe.
 
@@ -65,6 +74,12 @@ def plot_data(df):
     Returns:
         Nothing.
     """
-    df["datetime"] = pd.to_datetime(df["date"], format="%Y-%m-%d", errors="coerce")
-    plt.plot(df["datetime"], df["value"])
+    df_weather["datetime"] = pd.to_datetime(
+        df_weather["date"], format="%Y-%m-%d", errors="coerce"
+    )
+    fig, ax1 = plt.subplots(figsize=(8, 8))
+    ax2 = ax1.twinx()
+
+    plt.plot(df_weather["datetime"], df_weather["value"])
+    plt.plot(df_weather["datetime"], df_util["Time of Peak Demand"])
     plt.show()
