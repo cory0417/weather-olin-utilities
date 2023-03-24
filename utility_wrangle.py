@@ -30,8 +30,8 @@ for i in range(0, 11):
     df_electric_filtered[i].columns = [
         "Start Read Date",
         "End Read Date",
-        "Time of Peak Demand",
         "Total Cons. (kwh)",
+        "Time of Peak Demand",
         "Total Monthly Electricity Cost",
     ]
     df_electric_filtered[i] = df_electric_filtered[i].iloc[1:, :]
