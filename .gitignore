@@ -6,3 +6,7 @@ api_request
 
 ## Ignore utility bill data
 data/*
+
+## Ignore cache
+.pytest_cache
+__pycache__
