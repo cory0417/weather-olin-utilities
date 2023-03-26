@@ -12,13 +12,14 @@ LIMIT = "120"
 WEATHER_TITLES = {
     "TAVG": ("Average Temperature", "Farenheit °"),
     "PRCP": ("Total Precipitation", "in"),
+    "AWND": ("Average Wind Speed", "mph"),
 }
 
 SEASONS = {
-    "winter": ("12", "01", "02"),
-    "spring": ("03", "04", "05"),
-    "summer": ("06", "07", "08"),
-    "fall": ("09", "10", "11"),
+    "Winter": ("12", "01", "02"),
+    "Spring": ("03", "04", "05"),
+    "Summer": ("06", "07", "08"),
+    "Fall": ("09", "10", "11"),
 }
 
 
@@ -110,17 +111,22 @@ def plot_data(df_util_weather):
         Nothing.
     """
     weather_title_loc = WEATHER_TITLES[df_util_weather["datatype"].iloc[0]]
-
+    plt.style.use("ggplot")
     fig, ax1 = plt.subplots(figsize=(8, 8))
     ax2 = ax1.twinx()
 
-    ax1.plot(df_util_weather["datetime"], df_util_weather["value"], color="blue", lw=1)
+    ax1.plot(
+        df_util_weather["datetime"],
+        df_util_weather["value"],
+        marker=".",
+        color="blue",
+    )
 
     ax2.plot(
         df_util_weather["datetime"],
         df_util_weather["Total Cons. (kwh)"],
+        marker=".",
         color="red",
-        lw=1,
     )
 
     ax1.set_xlabel("Date")
