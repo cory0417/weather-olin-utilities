@@ -1,0 +1,86 @@
+---
+jupyter: python3
+---
+
+# Utility Bill through the lens of Climate
+
+---
+Author: Daeyoung Kim, Ellen Sun \
+Date: 2023-03-36
+
+## Introduction
+
+For our Software Design midterm project, we decided to analyze the patterns in the giant excel sheet of utility bill of Olin through the lens of our local climate. The excel sheet contained the electricity bill from FY01 to November of FY23 with variety of information like date, total electricity consumption, time of peak demand, supply cost, demand-response, and many more. 
+<p align="center">
+    <img src="images/excel_sheet.png" height="500" alt="Olin's electricity bill excel sheet" />
+</p>
+
+Our central research question was:
+>How does the variation in Boston climate affect Olin College’s electricity consumption and costs?
+
+
+## Initial Steps
+In order to answer our research question, we used the publicly available National Centers for Environmental Information's Climate Data Online (CDO) API to gather Boston's climate data. We chose Boston as our source of 'local' climate since it was geographically proximal to Olin College and had the most comprehensive data because of Boston Logan Airport's stable data collection. 
+
+The employed steps in gathering data from the API were:
+1. Find the Massachusetts ID used in the API
+2. Find weather stations in MA
+3. Choose a station and find available datatypes
+4. Choose relevant datatypes and fetch data
+5. Save into a .json and pandas dataframe
+
+```{python}
+import requests
+
+request_url = (
+    "https://www.ncei.noaa.gov/cdo-web/api/v2/locations?locationcategoryid=ST&limit=52"
+)
+
+with open("API_KEY.txt", "r", encoding="utf-8") as file:
+    token = file.read()
+
+response = requests.get(request_url, headers={"token": token})
+print(response.json()['results'][21])
+```
+
+Now, using `FIPS:25` as ID for Massachusetts, we found all the available stations. We found the ID (`GHCND:USW00014739`) for the Boston Logan weather station, which was the station that had the most coverage and would work best for our needs.
+
+```{python}
+import json
+request_url = (
+    "https://www.ncei.noaa.gov/cdo-web/api/v2/stations/GHCND:USW00014739"
+)
+
+response = requests.get(request_url, headers={"token": token})
+boston_logan_airport = json.dumps(response.json(), indent=4)
+print(boston_logan_airport)
+```
+
+```{python}
+import pandas as pd
+START_DATE = "2013-04-01"
+END_DATE = "2022-12-31"
+request_url = (
+    "https://www.ncei.noaa.gov/cdo-web/api/v2/datatypes?stationid=GHCND:USW00014739&startdate=2013-04-01&enddate=2022-12-31"
+)
+response = requests.get(request_url, headers={"token": token})
+df_datatypes = pd.json_normalize(response.json(), record_path=["results"])
+
+print(df_datatypes.head(10))
+```
+
+Although our intial approach was using the API for listing the available datatypes, the results were unorganized even with start and end date queries and did not give us the information that we needed. Thus, we found an [online documentation page](https://www.ncdc.noaa.gov/cdo-web/datasets/GHCND/stations/GHCND:USW00014739/detail) of the specific weather station and looked for available datatypes there. 
+<p align="center">
+    <img src="images/station.png" height="500" alt="Station documentation page" />
+</p>
+
+We chose `TAVG`, `AWND`, and `PRCP` for the datatypes and saved them locally as .json files. 
+
+```{python}
+from functions import get_data_api
+
+get_data_api("TAVG")
+get_data_api("PRCP")
+get_data_api("AWND")
+```
+
