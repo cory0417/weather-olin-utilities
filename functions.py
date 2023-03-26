@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 STATION_ID = "GHCND:USW00014739"
 DATASET_ID = "GSOM"
-START_DATE = "2013-01-01"
+START_DATE = "2013-04-01"
 END_DATE = "2022-12-31"
 LIMIT = "120"
 
