@@ -105,11 +105,11 @@ def plot_data(df_util_weather):
 
     Args:
         df_util_weather: a pandas dataframe containing information about a
-        specific weather pattern.
+        specific weather pattern and the utility information.
     Returns:
         Nothing.
     """
-    weather_title_loc = WEATHER_TITLES[df_util_weather["datatype"][0]]
+    weather_title_loc = WEATHER_TITLES[df_util_weather["datatype"].iloc[0]]
 
     fig, ax1 = plt.subplots(figsize=(8, 8))
     ax2 = ax1.twinx()
