@@ -9,6 +9,18 @@ START_DATE = "2013-01-01"
 END_DATE = "2022-12-31"
 LIMIT = "120"
 
+WEATHER_TITLES = {
+    "TAVG": ("Average Temperature", "Farenheit °"),
+    "PRCP": ("Total Precipitation", "in"),
+}
+
+SEASONS = {
+    "winter": ("12", "01", "02"),
+    "spring": ("03", "04", "05"),
+    "summer": ("06", "07", "08"),
+    "fall": ("09", "10", "11"),
+}
+
 
 def get_data_api(datatype_id):
     """
@@ -73,25 +85,69 @@ def join_dataframes(df_weather, df_util):
     df_weather["datetime"] = pd.to_datetime(df_weather["date"])
     df_weather["year-month"] = df_weather["datetime"].dt.strftime("%Y-%m")
     df_util_weather = pd.merge(left=df_util, right=df_weather, on="year-month")
-    return df_util_weather
+    df_util_weather_clean = df_util_weather.drop(
+        columns=[
+            "station",
+            "attributes",
+            "Start Read Date",
+            "End Read Date",
+            "date_x",
+            "date_y",
+        ]
+    )
+    return df_util_weather_clean
 
 
-def plot_data(df_weather, df_util):
+def plot_data(df_util_weather):
     """
-    Plots the data from the given pandas dataframe.
+    Plots the data from the given pandas dataframe against the total
+    consumption in the Olin utilities spreadsheet.
 
     Args:
-        df: a pandas dataframe containing information about a specific weather
-        pattern.
+        df_util_weather: a pandas dataframe containing information about a
+        specific weather pattern and the utility information.
     Returns:
         Nothing.
     """
-    df_weather["datetime"] = pd.to_datetime(
-        df_weather["date"], format="%Y-%m-%d", errors="coerce"
-    )
+    weather_title_loc = WEATHER_TITLES[df_util_weather["datatype"].iloc[0]]
+
     fig, ax1 = plt.subplots(figsize=(8, 8))
     ax2 = ax1.twinx()
 
-    plt.plot(df_weather["datetime"], df_weather["value"])
-    plt.plot(df_weather["datetime"], df_util["Time of Peak Demand"])
+    ax1.plot(df_util_weather["datetime"], df_util_weather["value"], color="blue", lw=1)
+
+    ax2.plot(
+        df_util_weather["datetime"],
+        df_util_weather["Total Cons. (kwh)"],
+        color="red",
+        lw=1,
+    )
+
+    ax1.set_xlabel("Date")
+    ax1.set_ylabel(
+        f"{weather_title_loc[0]} ({weather_title_loc[1]})",
+        color="blue",
+        fontsize=14,
+    )
+    ax1.tick_params(axis="y", labelcolor="blue")
+    ax2.set_ylabel("Total Electricity Consumption (kWh)", color="red", fontsize=14)
+    ax2.tick_params(axis="y", labelcolor="red")
+    fig.suptitle(f"{weather_title_loc[0]} vs. Utilities", fontsize=20)
+    fig.autofmt_xdate()
     plt.show()
+
+
+def filter_season(season, df_util_weather):
+    """
+    Filters the joined utilities and weather dataframe to only include rows
+    from a specific season.
+    Args:
+        season: a string representing the desired season.
+    Returns:
+        A dataframe containing the joint weather and utilities data only from
+        the specified season.
+    """
+    df_season = df_util_weather[
+        df_util_weather["datetime"].dt.strftime("%m").isin(SEASONS[season])
+    ]
+    return df_season
