@@ -79,24 +79,37 @@ def join_dataframes(df_weather, df_util):
         df_util: the dataframe containing the Olin utility information.
     Returns:
         A joined pandas dataframe with df_weather and df_util.
-
     """
-    df_util["date"] = pd.to_datetime(df_util["Start Read Date"])
-    df_util["year-month"] = df_util["date"].dt.strftime("%Y-%m")
-    df_weather["datetime"] = pd.to_datetime(df_weather["date"])
-    df_weather["year-month"] = df_weather["datetime"].dt.strftime("%Y-%m")
+    df_util["start_read_date"] = pd.to_datetime(df_util["start_read_date"])
+    df_util["year-month"] = df_util["start_read_date"].dt.strftime("%Y-%m")
+    df_weather["date"] = pd.to_datetime(df_weather["date"])
+    df_weather["year-month"] = df_weather["date"].dt.strftime("%Y-%m")
     df_util_weather = pd.merge(left=df_util, right=df_weather, on="year-month")
     df_util_weather_clean = df_util_weather.drop(
-        columns=[
-            "station",
-            "attributes",
-            "Start Read Date",
-            "End Read Date",
-            "date_x",
-            "date_y",
-        ]
+        columns=["station", "attributes", "start_read_date", "end_read_date", "date"]
     )
     return df_util_weather_clean
+
+
+def join_dataframes1(df_weather, df_util):
+    """
+    Joins the chosen weather information dataframe with the Olin utilities
+    dataframe by columns, and merges based on the column "year-month".
+
+    Args:
+        df_weather: the dataframe containing a specified type of weather
+        information.
+        df_util: the dataframe containing the Olin utility information.
+    Returns:
+        A joined pandas dataframe with df_weather and df_util.
+    """
+    df_util["start_read_date"] = pd.to_datetime(df_util["start_read_date"])
+    df_util["year-month"] = df_util["start_read_date"].dt.strftime("%Y-%m")
+    df_weather["date"] = pd.to_datetime(df_weather["date"])
+    df_weather["year-month"] = df_weather["date"].dt.strftime("%Y-%m")
+    df_util_weather = pd.merge(left=df_util, right=df_weather, on="year-month")
+
+    return df_util_weather
 
 
 def plot_data(df_util_weather):
