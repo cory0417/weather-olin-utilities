@@ -1,0 +1,286 @@
+---
+jupyter: python3
+---
+
+# Utility Bill through the lens of Climate
+
+---
+Author: Daeyoung Kim, Ellen Sun \
+Date: 2023-03-36
+
+## Introduction
+
+For our Software Design midterm project, we decided to analyze the patterns in the giant excel sheet of utility bill of Olin through the lens of our local climate. The excel sheet contained the electricity bill from FY01 to November of FY23 with variety of information like date, total electricity consumption, time of peak demand, supply cost, demand-response, and many more. 
+<p align="center">
+    <img src="images/excel_sheet.png" height="500" alt="Olin's electricity bill excel sheet" />
+</p>
+
+Our central research question was:
+>How does the variation in Boston climate affect Olin College’s electricity consumption and costs?
+
+## Tidying the Utility Data
+
+To make our dataset useful for analysis, we need to first *tidy* the data. 
+
+Currently, the spreadsheet has rows as variables and columns as observation. The observations are also spread across different tabs by their fiscal year. There are empty rows in the sheet as well as non-uniform nomenclature. The format of values are not standarized and vary across cells within the rows. Thus, the data right now is not very useful to us.  
+
+There are 3 rules to tidy data:
+>1. Every column is a variable.
+>2. Every row is an observation.
+>3. Every cell is a single value.
+
+[Source](https://cran.r-project.org/web/packages/tidyr/vignettes/tidy-data.html)
+
+We processed the dataset to adhere to the 3 rules for convenient analysis. 
+
+```{python}
+import pandas as pd
+
+# Read the excel sheet and store them as a list of dataframes
+df_electric_all = []
+excel_electricity = pd.ExcelFile("data/FY23_Electric_Data_Campus_Houses_edited.xlsx")
+for i in range(13, 24):
+    df_electric = pd.read_excel(
+        excel_electricity, f"FY{i}", header=None, usecols="C:O", nrows=44
+    )
+    df_electric_transpose = df_electric.T
+    valid_cols_mask = df_electric_transpose.iloc[0, :].notnull()
+    df_electric_select = df_electric_transpose.loc[:, valid_cols_mask]
+    df_electric_all.append(df_electric_select)
+
+
+# Select relevant data (columns) for the scope of the project
+df_electric_filtered = []
+for i in range(0, 11):
+    useful_cols = [
+        "Start Read Date",
+        "End Read Date",
+        "Time of Peak Demand",
+        "Total Cons. (kwh)",
+        "Total Monthly Electricity Cost",
+    ]
+    df_electric_filtered.append(
+        df_electric_all[i].loc[:, df_electric_all[i].iloc[0, :].isin(useful_cols)]
+    )
+    df_electric_filtered[i].columns = [
+        "start_read_date",
+        "end_read_date",
+        "total_consumption",
+        "time_of_peak_demand",
+        "total_cost",
+    ]
+    df_electric_filtered[i] = df_electric_filtered[i].iloc[1:, :]
+
+# Concatenating dataframes into a single long dataframe
+df_electric_long = pd.concat(df_electric_filtered, ignore_index=True)
+
+# Removing rows with NaN's
+df_electric_long.dropna(axis=0, inplace=True)
+
+# Save dataframe locally as a .csv file
+df_electric_long.to_csv("data/electricity_FY13_23.csv", index=False)
+```
+
+Here's a sample of how it looked after processing:
+
+```{python}
+display(HTML(df_electric_long.head(10).to_html()))
+```
+
+
+## Gathering Climate Data
+In order to answer our research question, we used the publicly available National Centers for Environmental Information's Climate Data Online (CDO) API to gather Boston's climate data. We chose Boston as our source of 'local' climate since it was geographically proximal to Olin College and had the most comprehensive data because of Boston Logan Airport's stable data collection. 
+
+The employed steps in gathering data from the API were:
+1. Find the Massachusetts ID used in the API
+2. Find weather stations in MA
+3. Choose a station and find available datatypes
+4. Choose relevant datatypes and fetch data
+5. Save into a .json and pandas dataframe
+
+```{python}
+import requests
+
+request_url = (
+    "https://www.ncei.noaa.gov/cdo-web/api/v2/locations?locationcategoryid=ST&limit=52"
+)
+
+with open("API_KEY.txt", "r", encoding="utf-8") as file:
+    token = file.read()
+
+response = requests.get(request_url, headers={"token": token})
+print(response.json()["results"][21])
+```
+
+Now, using `FIPS:25` as ID for Massachusetts, we found all the available stations. We found the ID (`GHCND:USW00014739`) for the Boston Logan weather station, which was the station that had the most coverage and would work best for our needs.
+
+```{python}
+import json
+
+request_url = "https://www.ncei.noaa.gov/cdo-web/api/v2/stations/GHCND:USW00014739"
+
+response = requests.get(request_url, headers={"token": token})
+boston_logan_airport = json.dumps(response.json(), indent=4)
+print(boston_logan_airport)
+```
+
+```{python}
+import pandas as pd
+
+START_DATE = "2013-04-01"
+END_DATE = "2022-12-31"
+request_url = "https://www.ncei.noaa.gov/cdo-web/api/v2/datatypes?stationid=GHCND:USW00014739&startdate=2013-04-01&enddate=2022-12-31"
+response = requests.get(request_url, headers={"token": token})
+df_datatypes = pd.json_normalize(response.json(), record_path=["results"])
+```
+
+Here were some of the available datatypes:
+
+```{python}
+display(HTML(df_datatypes.head(10).to_html()))
+```
+
+Although our intial approach was using the API for listing the available datatypes, the results were unorganized even with start and end date queries and did not give us the information that we needed. Thus, we found an [online documentation page](https://www.ncdc.noaa.gov/cdo-web/datasets/GHCND/stations/GHCND:USW00014739/detail) of the specific weather station and looked for available datatypes there. 
+<p align="center">
+    <img src="images/station.png" height="500" alt="Station documentation page" />
+</p>
+
+We chose `TAVG`, `AWND`, and `PRCP` for the datatypes and saved them locally as .json files. 
+
+```{python}
+from functions import get_data_api
+
+get_data_api("TAVG")
+get_data_api("PRCP")
+get_data_api("AWND")
+```
+
+## Which features are the most important?
+We were also curious to see which features were most relevant in our target variable, `Total Cons. (kwh)`. So, we merged all the data we had available -- climate and utility -- to create a single dataframe for analysis. 
+
+```{python}
+from IPython.display import HTML
+import pandas as pd
+
+from plotting import df_avg_temp, df_avg_wind, df_total_precp
+import functions
+
+## Merge all the weather data together into a single dataframe
+df_all_weather = pd.merge(left=df_avg_temp, right=df_avg_wind, on="date")
+
+# Keep only useful data
+df_filtered = df_all_weather.filter(
+    items=[
+        "date",
+        "value_x",
+        "value_y",
+    ]
+)
+
+# Set column name to the datatype (ex. TAVG)
+col_names = ["date"] + df_all_weather.filter(regex="datatype").iloc[0, :].tolist()
+df_filtered.columns = col_names
+
+# Merge another dataframe
+df_all_weather = pd.merge(left=df_filtered, right=df_total_precp, on="date")
+col_names = col_names + df_all_weather.filter(regex="datatype").iloc[0, :].tolist()
+df_all_weather_clean = df_all_weather.filter(items=["date", "TAVG", "AWND", "value"])
+df_all_weather_clean.columns = col_names
+
+## Join the utility data and the weather data
+df_util = pd.read_csv("./data/electricity_FY13_23.csv")
+df_all_data = functions.join_dataframes1(df_all_weather_clean, df_util)
+
+# Drop unnecessary columns 
+df_all_data = df_all_data.drop(
+    columns=["start_read_date", "end_read_date", "date"]
+)
+
+# Convert time information to numerical values
+df_all_data["time_of_peak_demand"] = (
+    pd.to_datetime(df_all_data["time_of_peak_demand"]).dt.hour
+    + pd.to_datetime(df_all_data["time_of_peak_demand"]).dt.minute / 60
+)
+df_all_data["month"] = pd.to_datetime(df_all_data["year-month"]).dt.month
+```
+
+Here's what the dataframe looked like after the processing:
+
+```{python}
+display(HTML(df_all_data.head(10).to_html()))
+```
+
+To analyze which features were the most influential predictors of the total consumption of electricity, we employed the analysis of variance (ANOVA) F-test.
+
+To give a little bit of context, the ANOVA F-test statistic is defined as 
+- the ratio of mean square error to regression mean square
+    - **mean square error**: the mean of squares of the error between the observed and the predicted value (in our case, generated using linear regression model)
+    - **regression mean square**: the mean of squares of difference between the fitted value and the mean of observed values. 
+
+Or alternatively, as
+- the ratio of **variation between groups** to **variation within the group**
+
+Another important statistic we obtained was the p-value. The **p-value** is an indicator that if below a certain threshold, ⍺, the result of the statistic is significant. A common value for ⍺ is 0.05. 
+
+A higher F-statistic, combined with a p-value below ⍺, could be interpreted as having greater influence on the target variable.
+In our case, the target variable was the total monthly electricity consumption and the features were: 
+- monthly total precipitation
+- month of year
+- time of peak demand
+- monthly average wind speed
+- monthly average temperature
+- total monthly electricity cost
+
+
+```{python}
+import matplotlib.pyplot as plt
+from sklearn.feature_selection import SelectKBest, f_regression
+
+%matplotlib inline
+plt.rcParams["font.family"] = "Helvetica"
+
+## Separating the features and the target
+features = df_all_data.drop(columns=["total_consumption", "year-month"])
+target = df_all_data["total_consumption"]
+
+# Create an instance of SelectKBest using the f_regression method
+selector_k_best = SelectKBest(score_func=f_regression, k="all")
+features_new = selector_k_best.fit_transform(features, target)
+```
+
+Here are the results:
+
+```{python}
+results_df = pd.DataFrame(
+    {
+        "Feature": features.columns,
+        "F-Score": selector_k_best.scores_,
+        "p-value": selector_k_best.pvalues_,
+    }
+)
+results_df = results_df.sort_values("F-Score", ascending=False)
+display(HTML(results_df.to_html()))
+```
+
+
+To visualize the results, we made a bar plot that shows the F-Scores of different features. 
+
+```{python}
+results_df = results_df.sort_values("F-Score", ascending=True)
+ylabels = [
+    "Monthly Total\n Precipitation",
+    "Month of\n Year",
+    "Time of\n Peak Demand",
+    "Monthly Average\n Wind Speed",
+    "Monthly Average\n Temperature",
+    "Total Monthly\n Electricity Cost",
+]
+
+fig, ax = plt.subplots()
+ax.barh(ylabels, results_df["F-Score"])
+ax.set_ylabel("Features")
+ax.set_xlabel("F-Score")
+ax.set_title("F-Score of Features for \nTotal Monthly Electricity Consumption")
+plt.show()
+```
+
