@@ -5,8 +5,12 @@ API_KEY.txt
 api_request
 
 ## Ignore utility bill data
-data/*
+data/electricity_FY13_23.csv
+data/FY23_Electric_Data_Campus_Houses_edited.xlsx
 
 ## Ignore cache
 .pytest_cache
-__pycache__
+__pycache__/
+
+# VS Code files
+.vscode/
