@@ -45,7 +45,9 @@ import pandas as pd
 
 # Read the excel sheet and store them as a list of dataframes
 df_electric_all = []
-excel_electricity = pd.ExcelFile("data/FY23_Electric_Data_Campus_Houses_edited.xlsx")
+excel_electricity = pd.ExcelFile(
+    "data/FY23_Electric_Data_Campus_Houses_edited.xlsx"
+)
 for i in range(13, 24):
     df_electric = pd.read_excel(
         excel_electricity, f"FY{i}", header=None, usecols="C:O", nrows=44
@@ -67,7 +69,9 @@ for i in range(0, 11):
         "Total Monthly Electricity Cost",
     ]
     df_electric_filtered.append(
-        df_electric_all[i].loc[:, df_electric_all[i].iloc[0, :].isin(useful_cols)]
+        df_electric_all[i].loc[
+            :, df_electric_all[i].iloc[0, :].isin(useful_cols)
+        ]
     )
     df_electric_filtered[i].columns = [
         "start_read_date",
@@ -109,9 +113,7 @@ The employed steps in gathering data from the API were:
 ```{python}
 import requests
 
-request_url = (
-    "https://www.ncei.noaa.gov/cdo-web/api/v2/locations?locationcategoryid=ST&limit=52"
-)
+request_url = "https://www.ncei.noaa.gov/cdo-web/api/v2/locations?locationcategoryid=ST&limit=52"
 
 with open("API_KEY.txt", "r", encoding="utf-8") as file:
     token = file.read()
@@ -125,7 +127,9 @@ Now, using `FIPS:25` as ID for Massachusetts, we found all the available station
 ```{python}
 import json
 
-request_url = "https://www.ncei.noaa.gov/cdo-web/api/v2/stations/GHCND:USW00014739"
+request_url = (
+    "https://www.ncei.noaa.gov/cdo-web/api/v2/stations/GHCND:USW00014739"
+)
 
 response = requests.get(request_url, headers={"token": token})
 boston_logan_airport = json.dumps(response.json(), indent=4)
@@ -157,10 +161,15 @@ We chose `TAVG`, `AWND`, and `PRCP` for the datatypes and saved them locally as 
 
 ```{python}
 from functions import get_data_api
+from os import path
 
-get_data_api("TAVG")
-get_data_api("PRCP")
-get_data_api("AWND")
+DATATYPES = ["TAVG", "PRCP", "AWND"]
+
+for datatype in DATATYPES:
+    if path.isfile(f"data/{datatype}.json"):
+        print(f"{datatype} dataset is ready!")
+    else:
+        get_data_api(datatype)
 ```
 
 After storing the information about each datatype into a `.json` file, we flattened the `.json` files into `pandas` dataframes. Then, we read the utilities data into a pandas dataframe and created a joint dataframe between each weather datatype and the utility information to make it easier to plot. Below is a sample of how the dataframe containing information about the average wind speed looks like. 
@@ -179,6 +188,11 @@ df_util_temp = join_dataframes(df_avg_temp, df_util)
 df_util_prcp = join_dataframes(df_total_prcp, df_util)
 
 display(HTML(df_util_wind.head(10).to_html()))
+
+import os
+
+parent_dir = os.path.abspath(os.path.join(os.getcwd()))
+print(parent_dir)
 ```
 
 The joint dataframes contain columns detailing utility information (`total_consumption`, `time_of_peak_demand`, `total_cost`) and weather information (`datatype`, showing which category this data is from, and `value`, showing the actual value taken-- in the displayed case, the average monthly wind speed in MPH)
@@ -201,7 +215,7 @@ From these graphs, we noticed three interesting patterns:
 Firstly, we hypothesized that temperature might be correlated with electricity consumption because Olin uses more air conditioning in the summer and turns it off in the winter. To check this, we created box plots to see the consumption for each of the seasons. The seasons were sorted by month, with December - Feburary being winter, March - May being spring, June - August being summer, and September - November being fall.
 
 ```{python}
-import matplotlib as plt
+import matplotlib.pyplot as plt
 from functions import filter_season
 
 SEASON_NAMES = ["Winter", "Spring", "Summer", "Fall"]
@@ -228,6 +242,7 @@ While the connection between temperature and electricity consumption might be in
 ```{python}
 import matplotlib.pyplot as plt
 import numpy as np
+
 avg_temp = df_util_temp["value"]
 avg_wind = df_util_wind["value"]
 plt.scatter(avg_temp, avg_wind, color="blue")
@@ -250,48 +265,9 @@ Lastly, we investigated the rise in consumption in 2016-2017 by looking at enrol
 We were also curious to see which features were most relevant in our target variable, `Total Cons. (kwh)`. So, we merged all the data we had available -- climate and utility -- to create a single dataframe for analysis. 
 
 ```{python}
-import pandas as pd
+from functions import merge_all_df
 
-from plotting import df_avg_temp, df_avg_wind, df_total_precp
-import functions
-
-## Merge all the weather data together into a single dataframe
-df_all_weather = pd.merge(left=df_avg_temp, right=df_avg_wind, on="date")
-
-# Keep only useful data
-df_filtered = df_all_weather.filter(
-    items=[
-        "date",
-        "value_x",
-        "value_y",
-    ]
-)
-
-# Set column name to the datatype (ex. TAVG)
-col_names = ["date"] + df_all_weather.filter(regex="datatype").iloc[0, :].tolist()
-df_filtered.columns = col_names
-
-# Merge another dataframe
-df_all_weather = pd.merge(left=df_filtered, right=df_total_precp, on="date")
-col_names = col_names + df_all_weather.filter(regex="datatype").iloc[0, :].tolist()
-df_all_weather_clean = df_all_weather.filter(items=["date", "TAVG", "AWND", "value"])
-df_all_weather_clean.columns = col_names
-
-## Join the utility data and the weather data
-df_util = pd.read_csv("./data/electricity_FY13_23.csv")
-df_all_data = functions.join_dataframes(df_all_weather_clean, df_util)
-
-# Drop unnecessary columns 
-df_all_data = df_all_data.drop(
-    columns=["start_read_date", "end_read_date", "date"]
-)
-
-# Convert time information to numerical values
-df_all_data["time_of_peak_demand"] = (
-    pd.to_datetime(df_all_data["time_of_peak_demand"]).dt.hour
-    + pd.to_datetime(df_all_data["time_of_peak_demand"]).dt.minute / 60
-)
-df_all_data["month"] = pd.to_datetime(df_all_data["year-month"]).dt.month
+df_all_data = merge_all_df([df_avg_temp, df_avg_wind, df_total_prcp])
 ```
 
 Here's what the dataframe looked like after the processing:
@@ -322,53 +298,26 @@ In our case, the target variable was the total monthly electricity consumption a
 - total monthly electricity cost
 
 ```{python}
-import matplotlib.pyplot as plt
-from sklearn.feature_selection import SelectKBest, f_regression
-
-%matplotlib inline
-plt.rcParams["font.family"] = "Helvetica"
+from functions import test_features
 
 ## Separating the features and the target
 features = df_all_data.drop(columns=["total_consumption", "year-month"])
 target = df_all_data["total_consumption"]
 
-# Create an instance of SelectKBest using the f_regression method
-selector_k_best = SelectKBest(score_func=f_regression, k="all")
-features_new = selector_k_best.fit_transform(features, target)
+df_results = test_features(features, target)
 ```
 
 Here are the results:
 
 ```{python}
-results_df = pd.DataFrame(
-    {
-        "Feature": features.columns,
-        "F-Score": selector_k_best.scores_,
-        "p-value": selector_k_best.pvalues_,
-    }
-)
-results_df = results_df.sort_values("F-Score", ascending=False)
-display(HTML(results_df.to_html()))
+display(HTML(df_results.to_html()))
 ```
 
 To visualize the results, we made a bar plot that shows the F-Scores of different features. 
 
 ```{python}
-results_df = results_df.sort_values("F-Score", ascending=True)
-ylabels = [
-    "Monthly Total\n Precipitation",
-    "Month of\n Year",
-    "Time of\n Peak Demand",
-    "Monthly Average\n Wind Speed",
-    "Monthly Average\n Temperature",
-    "Total Monthly\n Electricity Cost",
-]
+from functions import plot_f_test
 
-fig, ax = plt.subplots()
-ax.barh(ylabels, results_df["F-Score"])
-ax.set_ylabel("Features")
-ax.set_xlabel("F-Score")
-ax.set_title("F-Score of Features for \nTotal Monthly Electricity Consumption")
-plt.show()
+plot_f_test(df_results)
 ```
 
