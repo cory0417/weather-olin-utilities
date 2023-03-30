@@ -1,3 +1,7 @@
+"""
+File containing helper functions for computational essay.
+"""
+
 import json
 import requests
 import pandas as pd
