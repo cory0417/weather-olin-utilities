@@ -298,13 +298,13 @@ In our case, the target variable was the total monthly electricity consumption a
 - total monthly electricity cost
 
 ```{python}
-from functions import test_features
+from functions import feature_selection
 
 ## Separating the features and the target
 features = df_all_data.drop(columns=["total_consumption", "year-month"])
 target = df_all_data["total_consumption"]
 
-df_results = test_features(features, target)
+df_results = feature_selection(features, target)
 ```
 
 Here are the results:
