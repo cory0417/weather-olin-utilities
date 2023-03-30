@@ -45,7 +45,9 @@ import pandas as pd
 
 # Read the excel sheet and store them as a list of dataframes
 df_electric_all = []
-excel_electricity = pd.ExcelFile("data/FY23_Electric_Data_Campus_Houses_edited.xlsx")
+excel_electricity = pd.ExcelFile(
+    "data/FY23_Electric_Data_Campus_Houses_edited.xlsx"
+)
 for i in range(13, 24):
     df_electric = pd.read_excel(
         excel_electricity, f"FY{i}", header=None, usecols="C:O", nrows=44
@@ -67,7 +69,9 @@ for i in range(0, 11):
         "Total Monthly Electricity Cost",
     ]
     df_electric_filtered.append(
-        df_electric_all[i].loc[:, df_electric_all[i].iloc[0, :].isin(useful_cols)]
+        df_electric_all[i].loc[
+            :, df_electric_all[i].iloc[0, :].isin(useful_cols)
+        ]
     )
     df_electric_filtered[i].columns = [
         "start_read_date",
@@ -109,9 +113,7 @@ The employed steps in gathering data from the API were:
 ```{python}
 import requests
 
-request_url = (
-    "https://www.ncei.noaa.gov/cdo-web/api/v2/locations?locationcategoryid=ST&limit=52"
-)
+request_url = "https://www.ncei.noaa.gov/cdo-web/api/v2/locations?locationcategoryid=ST&limit=52"
 
 with open("API_KEY.txt", "r", encoding="utf-8") as file:
     token = file.read()
@@ -125,7 +127,9 @@ Now, using `FIPS:25` as ID for Massachusetts, we found all the available station
 ```{python}
 import json
 
-request_url = "https://www.ncei.noaa.gov/cdo-web/api/v2/stations/GHCND:USW00014739"
+request_url = (
+    "https://www.ncei.noaa.gov/cdo-web/api/v2/stations/GHCND:USW00014739"
+)
 
 response = requests.get(request_url, headers={"token": token})
 boston_logan_airport = json.dumps(response.json(), indent=4)
@@ -184,6 +188,11 @@ df_util_temp = join_dataframes(df_avg_temp, df_util)
 df_util_prcp = join_dataframes(df_total_prcp, df_util)
 
 display(HTML(df_util_wind.head(10).to_html()))
+
+import os
+
+parent_dir = os.path.abspath(os.path.join(os.getcwd()))
+print(parent_dir)
 ```
 
 The joint dataframes contain columns detailing utility information (`total_consumption`, `time_of_peak_demand`, `total_cost`) and weather information (`datatype`, showing which category this data is from, and `value`, showing the actual value taken-- in the displayed case, the average monthly wind speed in MPH)
@@ -233,6 +242,7 @@ While the connection between temperature and electricity consumption might be in
 ```{python}
 import matplotlib.pyplot as plt
 import numpy as np
+
 avg_temp = df_util_temp["value"]
 avg_wind = df_util_wind["value"]
 plt.scatter(avg_temp, avg_wind, color="blue")

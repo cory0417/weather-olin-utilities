@@ -326,7 +326,7 @@ def merge_all_df(list_df_weather):
     return df_all_data
 
 
-def test_features(features, target):
+def feature_selection(features, target):
     """
     Compute the F-scores and p-values of `features` for `target`.
 
