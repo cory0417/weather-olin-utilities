@@ -22,5 +22,5 @@ Running the jupyter notebook file for the computational essay will require the u
 
 All the unit tests are available in `tests/`. To run unit tests:  
 ```
-pytest tests/
+python -m pytest
 ```
