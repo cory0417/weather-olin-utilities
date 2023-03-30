@@ -9,8 +9,10 @@ data/electricity_FY13_23.csv
 data/FY23_Electric_Data_Campus_Houses_edited.xlsx
 
 ## Ignore cache
-.pytest_cache
+.pytest_cache/
 __pycache__/
+.ipynb_checkpoints/
+tests/__pycache__/
 
 # VS Code files
 .vscode/
