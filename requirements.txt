@@ -1,5 +1,5 @@
-openpyxl
-pandas
 matplotlib
+pandas
+requests
+scikit_learn
 numpy
-scikit-learn
