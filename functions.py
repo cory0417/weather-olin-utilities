@@ -3,10 +3,10 @@ import requests
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 from sklearn.feature_selection import SelectKBest, f_regression
 
 plt.rcParams["font.family"] = "Helvetica"
-
 
 STATION_ID = "GHCND:USW00014739"
 DATASET_ID = "GSOM"
@@ -16,8 +16,8 @@ LIMIT = "120"
 
 WEATHER_TITLES = {
     "TAVG": ("Average Temperature", "Farenheit °", "orange"),
-    "PRCP": ("Total Precipitation", "in", "blue"),
-    "AWND": ("Average Wind Speed", "mph", "purple"),
+    "PRCP": ("Total Precipitation", "in", "dodgerblue"),
+    "AWND": ("Average Wind Speed", "mph", "orchid"),
 }
 
 SEASONS = {
@@ -90,67 +90,39 @@ def join_dataframes(df_weather, df_util):
     df_weather["date"] = pd.to_datetime(df_weather["date"])
     df_weather["year-month"] = df_weather["date"].dt.strftime("%Y-%m")
     df_util_weather = pd.merge(left=df_util, right=df_weather, on="year-month")
-    df_util_weather_clean = df_util_weather.drop(
-        columns=[
-            "station",
-            "attributes",
-            "start_read_date",
-            "end_read_date",
-            "date",
-        ]
-    )
-    return df_util_weather_clean
-
-
-def join_dataframes1(df_weather, df_util):
-    """
-    Joins the chosen weather information dataframe with the Olin utilities
-    dataframe by columns, and merges based on the column "year-month".
-
-    Args:
-        df_weather: the dataframe containing a specified type of weather
-        information.
-        df_util: the dataframe containing the Olin utility information.
-    Returns:
-        A joined pandas dataframe with df_weather and df_util.
-    """
-    df_util["start_read_date"] = pd.to_datetime(df_util["start_read_date"])
-    df_util["year-month"] = df_util["start_read_date"].dt.strftime("%Y-%m")
-    df_weather["date"] = pd.to_datetime(df_weather["date"])
-    df_weather["year-month"] = df_weather["date"].dt.strftime("%Y-%m")
-    df_util_weather = pd.merge(left=df_util, right=df_weather, on="year-month")
-
     return df_util_weather
 
 
 def plot_weather_util(df_util_weather, ax1):
     """
     Plots the data from the given pandas dataframe against the total
-    consumption in the Olin utilities spreadsheet on the same axes.
+    consumption in the Olin utilities spreadsheet with two different axes.
 
     Args:
         df_util_weather: a pandas dataframe containing information about a
         specific weather pattern and the utility information.
+        ax1: the first axes in the plot-- an already created subplot passed in
+        from the outside where the plotting will occur.
     Returns:
-        The plot of the weather against consumption on the same axes as a
-        figure.
+        Nothing.
     """
     weather_title_loc = WEATHER_TITLES[df_util_weather["datatype"].iloc[0]]
     ax2 = ax1.twinx()
-
     ax1.plot(
-        df_util_weather["datetime"],
+        df_util_weather["date"],
         df_util_weather["value"],
         color=weather_title_loc[2],
+        label=weather_title_loc[0],
     )
 
     ax2.plot(
-        df_util_weather["datetime"],
-        df_util_weather["Total Cons. (kwh)"],
-        color="green",
+        df_util_weather["date"],
+        df_util_weather["total_consumption"],
+        color="seagreen",
+        label="Total Cons.",
     )
 
-    ax1.set_xlabel("Date")
+    ax1.set_xlabel("Date", fontsize=14)
     ax1.set_ylabel(
         f"{weather_title_loc[0]} ({weather_title_loc[1]})",
         color="black",
@@ -158,40 +130,48 @@ def plot_weather_util(df_util_weather, ax1):
     )
     ax1.tick_params(axis="y", labelcolor="black")
     ax2.set_ylabel(
-        "\n\nTotal Electricity Consumption (kWh)", color="black", fontsize=14
+        "\nTotal Electricity Consumption (kWh)", color="black", fontsize=14
     )
     ax2.tick_params(axis="y", labelcolor="black")
-    ax1.legend(labels=weather_title_loc[0])
-    ax2.legend(labels="Total Electricity Consumption")
+    ax1.legend(loc="upper left")
+    ax2.legend(loc="upper right")
+    ax1.xaxis.set_major_locator(mdates.MonthLocator(bymonth=(1, 13)))
+    ax1.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
 
 
 def plot_weather_util_corr(df_util_weather, subplot):
     """
     Plots the weather datatype against the total consumption in Olin
     electricity, with consumption on the x-axis and the weathertype
-    on the y-axis. Includes a trendline.
+    on the y-axis. Includes a calculated linear trendline.
 
     Args:
         df_util_weather: a pandas dataframe containing information about a
         specific weather pattern and the utility information.
+        subplot: an already-created subplot where the plotting will occur.
     Returns:
-        The plot of the weather against consumption on an x-y plot as a figure.
+        Nothing.
     """
+    weather_title_loc = WEATHER_TITLES[df_util_weather["datatype"].iloc[0]]
     weather_data = df_util_weather["value"]
-    consumption_data = df_util_weather["Total Cons. (kwh)"]
-    subplot.scatter(weather_data, consumption_data)
-    subplot.set_xlabel("Total Electricity Consumption (kWh)")
-
+    consumption_data = df_util_weather["total_consumption"].astype(float)
+    subplot.scatter(weather_data, consumption_data, color=weather_title_loc[2])
+    subplot.set_xlabel(
+        f"{weather_title_loc[0]} ({weather_title_loc[1]})", fontsize=14
+    )
     poly_fit = np.polyfit(weather_data, consumption_data, 1)
     equation_fit = np.poly1d(poly_fit)
-    subplot.plot(weather_data, equation_fit(consumption_data), color="blue")
+    subplot.plot(
+        weather_data, equation_fit(weather_data), color="red", label="Trendline"
+    )
+    subplot.legend(loc="upper left")
 
 
 def plot_weather_util_2_plots(df_util_weather):
     """
     Plots two subplots of the weather datatype against consumption with
-    the first being both on one axes and the second being consumption on x-axis
-    and weather data on y-axis.
+    the first being both on the same axes and the second being consumption on
+    the x-axis and weather data on y-axis.
 
     Args:
         df_util_weather: a pandas dataframe containing information about a
@@ -200,14 +180,14 @@ def plot_weather_util_2_plots(df_util_weather):
         Nothing.
     """
     weather_title_loc = WEATHER_TITLES[df_util_weather["datatype"].iloc[0]]
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 8))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
     plot_weather_util(df_util_weather, ax1)
     plot_weather_util_corr(df_util_weather, ax2)
     fig.tight_layout(pad=5)
+    plt.subplots_adjust(wspace=0.5)
     fig.suptitle(
         f"{weather_title_loc[0]} vs. Total Electricity Consumption", fontsize=20
     )
-    fig.autofmt_xdate()
     plt.show()
 
 
@@ -222,7 +202,7 @@ def filter_season(season, df_util_weather):
         the specified season.
     """
     df_season = df_util_weather[
-        df_util_weather["datetime"].dt.strftime("%m").isin(SEASONS[season])
+        df_util_weather["date"].dt.strftime("%m").isin(SEASONS[season])
     ]
     return df_season
 
@@ -311,9 +291,9 @@ def merge_all_df(list_df_weather):
     """
     col_names = ["date"]
     df_merge = list_df_weather[0]
-    for df in list_df_weather[1:]:
+    for dataframe in list_df_weather[1:]:
         # Merge all the weather data together into a single dataframe
-        df_merge = pd.merge(left=df_merge, right=df, on="date")
+        df_merge = pd.merge(left=df_merge, right=dataframe, on="date")
 
         # Keep only useful data
         df_filtered = df_merge.filter(regex="date|value|[A-Z]{4}", axis=1)
@@ -329,7 +309,7 @@ def merge_all_df(list_df_weather):
 
     # Join the utility data and the weather data
     df_util = pd.read_csv("./data/electricity_FY13_23.csv")
-    df_all_data = join_dataframes1(df_filtered, df_util)
+    df_all_data = join_dataframes(df_filtered, df_util)
 
     # Drop unnecessary columns
     df_all_data = df_all_data.drop(
@@ -399,11 +379,11 @@ def plot_f_test(df_results):
         "Total Monthly\n Electricity Cost",
     ]
 
-    fig, ax = plt.subplots()
-    ax.barh(ylabels, df_results["F-Score"])
-    ax.set_ylabel("Features")
-    ax.set_xlabel("F-Score")
-    ax.set_title(
+    _, ax1 = plt.subplots()
+    ax1.barh(ylabels, df_results["F-Score"])
+    ax1.set_ylabel("Features")
+    ax1.set_xlabel("F-Score")
+    ax1.set_title(
         "F-Score of Features for \nTotal Monthly Electricity Consumption"
     )
     plt.show()
