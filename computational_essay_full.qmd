@@ -16,7 +16,7 @@ For our Software Design midterm project, we decided to analyze the patterns in t
 </p>
 
 Our central research question was:
->How does the variation in Boston climate affect Olin College’s electricity consumption and costs?
+>How does the variation in Boston climate affect Olin College’s electricity consumption?
 
 ## Tidying the Utility Data
 
@@ -45,7 +45,11 @@ Below is the code to autoreload cells for our own convenience.
 #| vscode: {languageId: python}
 from os import path
 from functions_manage_data import tidy_data
-if path.isfile("data/electricity_FY13_23.csv"):
+
+PATH_UTILITY = "data/electricity_FY13_23.csv"
+PATH_UTILITY_JITTERED = "data/electricity_FY13_23_jittered.csv"
+
+if path.isfile(PATH_UTILITY) or path.isfile(PATH_UTILITY_JITTERED):
     print("The utility data is ready!")
 else:
     tidy_data("data/FY23_Electric_Data_Campus_Houses_edited.xlsx")
@@ -58,8 +62,12 @@ Here's a sample of how it looked after processing:
 import pandas as pd
 from IPython.display import HTML
 
-df_electric_long = pd.read_csv("data/electricity_FY13_23_jittered.csv")
-display(HTML(df_electric_long.head(10).to_html()))
+try:
+    df_util = pd.read_csv(PATH_UTILITY)
+except FileNotFoundError:
+    df_util = pd.read_csv(PATH_UTILITY_JITTERED)
+
+display(HTML(df_util.head(10).to_html()))
 ```
 
 ## Gathering Climate Data
@@ -146,7 +154,6 @@ from functions_manage_data import flatten_json, join_dataframes
 df_avg_temp = flatten_json("TAVG")
 df_total_prcp = flatten_json("PRCP")
 df_avg_wind = flatten_json("AWND")
-df_util = pd.read_csv("./data/electricity_FY13_23_jittered.csv")
 
 df_util_wind = join_dataframes(df_avg_wind, df_util)
 df_util_temp = join_dataframes(df_avg_temp, df_util)
@@ -217,7 +224,7 @@ plt.show()
 
 The boxplot above shows the ranges and medians of electricity consumption for each of the seasons. As we expected, `winter` had significantly `lower consumption` while `summer` had significantly `higher` values. This information supports our hypothesis that the high correlation between temperature and electricity consumption was indeed because of how Olin manages its power usage during the winter and summer seasons. 
 
-### Wind Speed vs Consumption
+### Wind Speed vs Consumption (vs Average Temperature)
 
 While the connection between temperature and electricity consumption might be intuitive, the correlation found for average wind speed is not. To explore more into this phenomenon, we graphed `wind speed` against `average temperature`.
 
@@ -311,4 +318,26 @@ from functions_f_test import plot_f_test
 
 plot_f_test(df_results)
 ```
+
+#### Takeaways from the F-Test
+
+First and foremost, it's crucial to take peek at the p-values of the features since it'll inform us about the validity of the F-scores. It's notable that `Monthly Total Precipitation` has a p-value of about 0.8 which indicates that there's a very chance that the observed outcome is a result of chance. But otherwise, all the features have p-value of less than 0.05, so we can use the results of the F-test to gauge the influence of the feature on our target, `Total Monthly Electricity Consumption`. 
+
+Although some might say that including the `Total Monthly Electricity Cost` as a feature is irrelevant for F-test with `Total Monthly Electricity Consumption` as the target, we want to see how the `Monthly Average Temperature` would compare to it as an indicator. As expected, `Total Monthly Electricity Cost` shows the highest F-score, but surprisingly, `Monthly Average Temperature` stands as a strong indicator to electricity consumption even compared to the electricity cost -- its F-score is close to half of that of `Total Monthly Electricity Cost`. `Monthly Average Wind Speed` was the next strongest indicator, which was in line with the prior investigation through the correlation coefficients. `Time of Peak Demand` and `Month of Year` were much weaker indicators in comparison. 
+
+
+## Summarized Intrepretation
+
+Through our statistical analyses and plots, we found that the weather type correlating most with Olin’s total monthly electricity consumption was Boston's monthly average temperature. These results quantitatively support our initial hypothesis that electricity consumption is most affected by Olin’s heating and cooling system during different seasons of the year. 
+
+
+Wind speed is the next most correlated dataset; however, as we found in our graph of Average Wind Speed vs Average Temperature, wind speed is highly correlated with temperature, which could explain the correlation with the electricity consumption. Therefore, wind speed may not be directly influential to electricity consumption. 
+
+
+Precipitation is barely correlated with electricity consumption, maybe even close to random chance within our sample of dataset. 
+
+
+## Conclusion 
+
+Overall, this project has given us an insight into the impact of our local climate on the energy consumption. It also provides a perspective on the significance of climate change with extremely relevant and localized context. We quantitatively found out that temperature is an outstanding indicator of Olin's electricity consumption. Furthermore, with the knowledge that the cooling towers at Olin operate with electricity, we can infer that one of the biggest contributors to Olin’s electricity consumption is the AC -- in other words, minimizing our use of cooling units will save the most electricity. On a different note, it also suggests that further installation of energy meters on Olin's campus at a building-level, instead of a campus-level meter, would help generate much more data-based insights as such. We could then use the insights to determine biggest factors in energy consumption and point sustainability efforts into projects with greatest capacity for impact. 
 
