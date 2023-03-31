@@ -21,6 +21,7 @@ spec.loader.exec_module(func_f_test)
 
 DATATYPES = ["TAVG", "PRCP", "AWND"]
 
+
 @pytest.fixture(scope="session")
 def input_results():
     """

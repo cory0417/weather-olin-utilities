@@ -1,8 +1,13 @@
+"""
+Function file for scrambling the Olin Utility data so that there is data to
+demonstrate on while keeping the Olin data secure.
+"""
+
 import pandas as pd
 import numpy as np
 
 
-def add_jitter(x, factor):
+def add_jitter(x_int, factor):
     """
     Add jitter to the value by adding a random value with a factor.
 
@@ -13,7 +18,7 @@ def add_jitter(x, factor):
     Returns:
         x_jittered: An integer that represents the value aftering jittering.
     """
-    x_jittered = x + factor * np.random.normal(0, 1)
+    x_jittered = x_int + factor * np.random.normal(0, 1)
     return x_jittered
 
 

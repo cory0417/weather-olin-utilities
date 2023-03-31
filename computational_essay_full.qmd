@@ -71,7 +71,7 @@ display(HTML(df_util.head(10).to_html()))
 ```
 
 ## Gathering Climate Data
-In order to answer our research question, we used the publicly available National Centers for Environmental Information's Climate Data Online (CDO) API to gather Boston's climate data. We chose Boston as our source of 'local' climate since it was geographically proximal to Olin College and had the most comprehensive data because of Boston Logan Airport's stable data collection. 
+In order to answer our research question, we used the publicly available [National Centers for Environmental Information's Climate Data Online (CDO) API](https://www.ncdc.noaa.gov/cdo-web/webservices/v2) to gather Boston's climate data. We chose Boston as our source of 'local' climate since it was geographically proximal to Olin College and had the most comprehensive data because of Boston Logan Airport's stable data collection. 
 
 The employed steps in gathering data from the API were:
 1. Find the Massachusetts ID used in the API
