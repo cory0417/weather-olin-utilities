@@ -3,35 +3,51 @@ File to run pytest unit tests on different helper functions in
 functions_f_test.py
 """
 
+import importlib.util
 from os import path
 import pytest
 
-from functions import (
-    merge_all_df,
-    feature_selection,
-    get_data_api,
-    flatten_json,
+spec = importlib.util.spec_from_file_location(
+    "function", "./functions_manage_data.py"
 )
+func_manage_data = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(func_manage_data)
 
+spec = importlib.util.spec_from_file_location(
+    "function", "./functions_f_test.py"
+)
+func_f_test = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(func_f_test)
+
+DATATYPES = ["TAVG", "PRCP", "AWND"]
 
 @pytest.fixture(scope="session")
 def input_results():
-    DATATYPES = ["TAVG", "PRCP", "AWND"]
+    """
+    Fixture to return a pandas dataframe of results after F-test.
 
+    Args:
+        Nothing.
+    Returns:
+        df_results: A pandas dataframe that represent the results of the F-test
+        with features, F-score, p-value as its columns.
+    """
     for datatype in DATATYPES:
         if path.isfile(f"data/{datatype}.json"):
             pass
         else:
-            get_data_api(datatype)
+            func_manage_data.get_data_api(datatype)
 
-    df_avg_temp = flatten_json("TAVG")
-    df_total_prcp = flatten_json("PRCP")
-    df_avg_wind = flatten_json("AWND")
+    df_avg_temp = func_manage_data.flatten_json("TAVG")
+    df_total_prcp = func_manage_data.flatten_json("PRCP")
+    df_avg_wind = func_manage_data.flatten_json("AWND")
 
-    df_all_data = merge_all_df([df_avg_temp, df_avg_wind, df_total_prcp])
+    df_all_data = func_manage_data.merge_all_df(
+        [df_avg_temp, df_avg_wind, df_total_prcp]
+    )
     features = df_all_data.drop(columns=["total_consumption", "year-month"])
     target = df_all_data["total_consumption"]
-    df_results = feature_selection(features, target)
+    df_results = func_f_test.feature_selection(features, target)
     print("test")
     print(df_results)
     return df_results

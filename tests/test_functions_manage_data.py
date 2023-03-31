@@ -4,15 +4,15 @@ functions_manage_data.py
 """
 
 from os import path
+import importlib.util
 import pandas as pd
 import pytest
 
-from functions_manage_data import (
-    get_data_api,
-    flatten_json,
-    filter_season,
-    join_dataframes,
+spec = importlib.util.spec_from_file_location(
+    "function", "./functions_manage_data.py"
 )
+func_manage_data = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(func_manage_data)
 
 
 @pytest.fixture(scope="session")
@@ -30,11 +30,11 @@ def create_df():
     if path.isfile("data/TAVG.json"):
         pass
     else:
-        get_data_api("TAVG")
+        func_manage_data.get_data_api("TAVG")
 
-    df_avg_temp = flatten_json("TAVG")
+    df_avg_temp = func_manage_data.flatten_json("TAVG")
     df_util = pd.read_csv("./data/electricity_FY13_23.csv")
-    df_util_temp = join_dataframes(df_avg_temp, df_util)
+    df_util_temp = func_manage_data.join_dataframes(df_avg_temp, df_util)
     return df_util_temp
 
 
@@ -59,7 +59,7 @@ def test_filter_season(season_name, season_nums, create_df):
         create_df: the dataframe returned by create_df()-- a sample of a full
         dataframe containing all the weather and utility information
     """
-    filtered_df = filter_season(season_name, create_df)
+    filtered_df = func_manage_data.filter_season(season_name, create_df)
     assert all(
         pd.to_datetime(filtered_df["year-month"])
         .dt.strftime("%m")
