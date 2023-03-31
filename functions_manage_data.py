@@ -86,7 +86,7 @@ def join_dataframes(df_weather, df_util):
 
 def calc_weather_util_corr(df_util_weather):
     """
-    Calculates the r value (representing the correlation) between the values
+    Calculates Pearson's coefficient correlation value between the values
     of a certain weather datatype and the total monthly electricity
     consumption.
 

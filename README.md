@@ -26,7 +26,6 @@ The jupyter notebook will also require the utility data (`data/electricity_FY13_
 
 To use a different set of climate data from [National Centers for Environmental Information's Climate Data Online (CDO) API](https://www.ncdc.noaa.gov/cdo-web/webservices/v2), make sure to store your API key to a file named `API_KEY.txt` in the root directory of the repo. You can modify the queries by changing the values of `STATION_ID`, `DATASET_ID`, `START_DATE`, `END_DATE`, and `LIMIT` in `functions_manage_data.py`. 
 
-
 # Unit Testing
 
 All the unit tests are available in `tests/`. To run unit tests:  

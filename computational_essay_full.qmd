@@ -168,27 +168,29 @@ plot_weather_util_2_plots(df_util_prcp)
 plot_weather_util_2_plots(df_util_wind)
 ```
 
-Next, we put each specific r-value in a table to see the exact correlations between each of the weather datatypes and total monthly electricity consumption:
+Next, we put each specific `Pearson's correlation coefficient` in a table to see the exact correlations between each of the weather datatypes and total monthly electricity consumption:
 
 ```{python}
 #| vscode: {languageId: python}
 from functions_manage_data import calc_weather_util_corr
-df_correlation = pd.DataFrame(columns=["weather_datatype", "r_value"])
+df_correlation = pd.DataFrame(columns=["weather_datatype", "pearson_r_value"])
 
 df_util_weathers = [df_util_temp, df_util_prcp, df_util_wind]
 
 for i, df_util_weather in enumerate(df_util_weathers):
     df_correlation.at[i, "weather_datatype"] = df_util_weather["datatype"][0]
-    df_correlation.at[i, "r_value"] = calc_weather_util_corr(df_util_weather)
+    df_correlation.at[i, "pearson_r_value"] = calc_weather_util_corr(df_util_weather)
 
 display(HTML(df_correlation.to_html()))
 ```
 
-From these graphs, we noticed three interesting patterns:
+From these graphs and the table, we noticed three interesting patterns:
 - `Average Temperature` had a `highly positive` correlation with electricity consumption
 - `Average Wind Speed` had a `fairly negative` correlation with electricity consumption 
 - Olin's electricity consumption seemed to rise significantly around 2016-2017, which has no apparent cause from any of these three weather patterns.
     
+### Temperature vs Consumption
+
 Firstly, we hypothesized that temperature might be correlated with electricity consumption because Olin uses more air conditioning in the summer and turns it off in the winter. To check this, we created box plots to see the consumption for each of the seasons. The seasons were sorted by month, with December - Feburary being winter, March - May being spring, June - August being summer, and September - November being fall.
 
 ```{python}
@@ -213,7 +215,9 @@ plt.title("Total Energy Consumption in each Season (kwh)")
 plt.show()
 ```
 
-The boxplot above shows the ranges and medians of electricity consumption for each of the seasons. As we expected, winter had significantly lower consumption while summer had significantly higher values. This information supports our hypothesis that the high correlation between temperature and electricity consumption was indeed because of how Olin manages its power usage during the winter and summer seasons. 
+The boxplot above shows the ranges and medians of electricity consumption for each of the seasons. As we expected, `winter` had significantly `lower consumption` while `summer` had significantly `higher` values. This information supports our hypothesis that the high correlation between temperature and electricity consumption was indeed because of how Olin manages its power usage during the winter and summer seasons. 
+
+### Wind Speed vs Consumption
 
 While the connection between temperature and electricity consumption might be intuitive, the correlation found for average wind speed is not. To explore more into this phenomenon, we graphed `wind speed` against `average temperature`.
 
@@ -224,20 +228,24 @@ import numpy as np
 avg_temp = df_util_temp["value"]
 avg_wind = df_util_wind["value"]
 plt.scatter(avg_temp, avg_wind, color="blue")
-plt.xlabel("Average Temperature (F°)")
-plt.ylabel("Average Wind Speed (mph)")
-plt.title("Average Wind Speed vs Average Temperature")
+plt.xlabel("Average Monthly Temperature (F°)")
+plt.ylabel("Average Monthly Wind Speed (mph)")
+plt.title("Average Monthly Wind Speed vs Average Monthly Temperature")
 
 z = np.polyfit(avg_temp, avg_wind, 1)
 p = np.poly1d(z)
-plt.plot(avg_temp, p(avg_temp), color="red", label="Trendline")
+plt.plot(avg_temp, p(avg_temp), color="red", label="Best Fit Line")
 plt.legend()
 plt.show()
+
+temp_wind_corr = np.corrcoef(avg_temp, avg_wind)[0][1]
+print(f"The Pearson correlation coefficient is {temp_wind_corr}")
 ```
 
-Looking at the graph above, we can see that average wind speed is clearly `negatively correlated` with average temperature, meaning the correlation between wind speed and electricity consumption was mostly likely rooted in temperature differences instead of much to do with wind speed itself.
+Looking at the graph and the correlation coefficient (`-0.71`) above, we can see that average wind speed is clearly `negatively correlated` with average temperature, meaning the correlation between wind speed and electricity consumption was mostly likely rooted in temperature differences instead of much to do with wind speed itself.
 
-Lastly, we investigated the rise in consumption in 2016-2017 by looking at enrollment numbers online. There was about a 5.7% increase in enrollment (20 people), but that isn't likely to cause such a significant increase in consumption. 
+### Rise in Consumption
+Lastly, we investigated the rise in consumption in 2016-2017 by looking at enrollment numbers online. There was about a `5.7%` increase in enrollment (20 people), but that isn't likely to cause such a significant increase in consumption. We haven't yet found anything else that indicates a reason for why this occured, but that is definitely a consideration for future work.
 
 ## Which features are the most important?
 We were also curious to see which features were most relevant in our target variable, `Total Cons. (kwh)`. So, we merged all the data we had available -- climate and utility -- to create a single dataframe for analysis. 
