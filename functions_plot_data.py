@@ -9,9 +9,9 @@ import matplotlib.dates as mdates
 plt.rcParams["font.family"] = "Helvetica"
 
 WEATHER_TITLES = {
-    "TAVG": ("Average Temperature", "Farenheit °", "orange"),
-    "PRCP": ("Total Precipitation", "in", "dodgerblue"),
-    "AWND": ("Average Wind Speed", "mph", "orchid"),
+    "TAVG": ("Average Monthly Temperature", "Farenheit °", "orange"),
+    "PRCP": ("Total Monthly Precipitation", "in", "dodgerblue"),
+    "AWND": ("Average Monthly Wind Speed", "mph", "orchid"),
 }
 
 
@@ -56,7 +56,9 @@ def plot_weather_util(df_util_weather, ax1):
     )
     ax1.tick_params(axis="y", labelcolor="black")
     ax2.set_ylabel(
-        "\nTotal Electricity Consumption (kWh)", color="black", fontsize=14
+        "\nTotal Monthly Electricity Consumption (kWh)",
+        color="black",
+        fontsize=14,
     )
     ax2.tick_params(axis="y", labelcolor="black")
     ax1.legend(loc="upper left")
