@@ -1,0 +1,11 @@
+{
+    "elevation": 3.2,
+    "mindate": "1936-01-01",
+    "maxdate": "2023-03-27",
+    "latitude": 42.36057,
+    "name": "BOSTON LOGAN INTERNATIONAL AIRPORT, MA US",
+    "datacoverage": 1,
+    "id": "GHCND:USW00014739",
+    "elevationUnit": "METERS",
+    "longitude": -71.00975
+}

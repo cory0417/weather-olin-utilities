@@ -34,13 +34,11 @@ We processed the dataset to adhere to the 3 rules for convenient analysis.
 Below is the code to autoreload cells for our own convenience.
 
 ```{python}
-#| vscode: {languageId: python}
 %load_ext autoreload
 %autoreload 2
 ```
 
 ```{python}
-#| vscode: {languageId: python}
 from os import path
 from functions.functions_manage_data import tidy_data
 
@@ -56,7 +54,6 @@ else:
 Here's a sample of how it looked after processing:
 
 ```{python}
-#| vscode: {languageId: python}
 import pandas as pd
 from IPython.display import HTML
 
@@ -79,46 +76,64 @@ The employed steps in gathering data from the API were:
 5. Save into a .json and pandas dataframe
 
 ```{python}
-#| vscode: {languageId: python}
 import requests
+import json
 
 FIPS_URL = "https://www.ncei.noaa.gov/cdo-web/api/v2/locations?locationcategoryid=ST&limit=52"
 
-with open("API_KEY.txt", "r", encoding="utf-8") as file:
-    token = file.read()
-
-response = requests.get(FIPS_URL, headers={"token": token})
-print(response.json()["results"][21])
+try: 
+    with open("API_KEY.txt", "r", encoding="utf-8") as file:
+        token = file.read()
+    response = requests.get(FIPS_URL, headers={"token": token})
+    ma_fips = response.json()["results"][21]
+    with open("./data/MA_FIPS.json", "w", encoding="utf-8") as file:
+        json.dump(ma_fips, file, ensure_ascii=False, indent=4)
+    print(ma_fips)
+except FileNotFoundError:
+    with open("./data/TAVG.json", encoding="utf-8") as file:
+        ma_fips = json.loads(file.read())
+    print(ma_fips)
 ```
 
 Now, using `FIPS:25` as ID for Massachusetts, we found all the available stations. We found the ID (`GHCND:USW00014739`) for the Boston Logan weather station, which was the station that had the most coverage and would work best for our needs.
 
 ```{python}
-#| vscode: {languageId: python}
-import json
-
 STATION_URL = (
     "https://www.ncei.noaa.gov/cdo-web/api/v2/stations/GHCND:USW00014739"
 )
+try: 
+    with open("API_KEY.txt", "r", encoding="utf-8") as file:
+        token = file.read()
+    response = requests.get(STATION_URL, headers={"token": token})
+    boston_logan_airport = response.json()
+    with open("./data/station.json", "w", encoding="utf-8") as file:
+        json.dump(boston_logan_airport, file, ensure_ascii=False, indent=4)
+    print(boston_logan_airport)
 
-response = requests.get(STATION_URL, headers={"token": token})
-boston_logan_airport = json.dumps(response.json(), indent=4)
-print(boston_logan_airport)
+except FileNotFoundError:
+    with open("./data/station.json", encoding="utf-8") as file:
+        boston_logan_airport = json.loads(file.read())
+    print(boston_logan_airport)
 ```
 
 ```{python}
-#| vscode: {languageId: python}
 START_DATE = "2013-04-01"
 END_DATE = "2022-12-31"
 DATATYPE_URL = "https://www.ncei.noaa.gov/cdo-web/api/v2/datatypes?stationid=GHCND:USW00014739&startdate=2013-04-01&enddate=2022-12-31"
-response = requests.get(DATATYPE_URL, headers={"token": token})
-df_datatypes = pd.json_normalize(response.json(), record_path=["results"])
+
+try: 
+    with open("API_KEY.txt", "r", encoding="utf-8") as file:
+        token = file.read()
+    response = requests.get(DATATYPE_URL, headers={"token": token})
+    df_datatypes = pd.json_normalize(response.json(), record_path=["results"])
+    df_datatypes.to_csv("data/datatypes.csv", index=False)
+except:
+    df_datatypes = pd.read_csv("data/datatypes.csv")
 ```
 
 Here were some of the available datatypes:
 
 ```{python}
-#| vscode: {languageId: python}
 display(HTML(df_datatypes.head(10).to_html()))
 ```
 
@@ -130,7 +145,6 @@ Although our intial approach was using the API for listing the available datatyp
 We chose `TAVG`, `AWND`, and `PRCP` for the datatypes and saved them locally as .json files. 
 
 ```{python}
-#| vscode: {languageId: python}
 from os import path
 from functions.functions_manage_data import get_data_api
 
@@ -146,7 +160,6 @@ for datatype in DATATYPES:
 After storing the information about each datatype into a `.json` file, we flattened the `.json` files into `pandas` dataframes. Then, we read the utilities data into a pandas dataframe and created a joint dataframe between each weather datatype and the utility information to make it easier to plot. Below is a sample of how the dataframe containing information about the average wind speed looks like. 
 
 ```{python}
-#| vscode: {languageId: python}
 from functions.functions_manage_data import flatten_json, join_dataframes
 
 df_avg_temp = flatten_json("TAVG")
@@ -165,7 +178,6 @@ The joint dataframes contain columns detailing utility information (`total_consu
 Now we can plot each weather datatype against the `total monthly electricity consumption` (kwh) of Olin.  
 
 ```{python}
-#| vscode: {languageId: python}
 from functions.functions_plot_data import plot_weather_util_2_plots
 
 plot_weather_util_2_plots(df_util_temp)
@@ -176,7 +188,6 @@ plot_weather_util_2_plots(df_util_wind)
 Next, we put each specific `Pearson's correlation coefficient` in a table to see the exact correlations between each of the weather datatypes and total monthly electricity consumption:
 
 ```{python}
-#| vscode: {languageId: python}
 from functions.functions_manage_data import calc_weather_util_corr
 df_correlation = pd.DataFrame(columns=["weather_datatype", "pearson_r_value"])
 
@@ -199,7 +210,6 @@ From these graphs and the table, we noticed three interesting patterns:
 Firstly, we hypothesized that temperature might be correlated with electricity consumption because Olin uses more air conditioning in the summer and turns it off in the winter. To check this, we created box plots to see the consumption for each of the seasons. The seasons were sorted by month, with December - Feburary being winter, March - May being spring, June - August being summer, and September - November being fall.
 
 ```{python}
-#| vscode: {languageId: python}
 import matplotlib.pyplot as plt
 from functions.functions_manage_data import filter_season
 
@@ -227,7 +237,6 @@ The boxplot above shows the ranges and medians of electricity consumption for ea
 While the connection between temperature and electricity consumption might be intuitive, the correlation found for average wind speed is not. To explore more into this phenomenon, we graphed `wind speed` against `average temperature`.
 
 ```{python}
-#| vscode: {languageId: python}
 import numpy as np
 
 avg_temp = df_util_temp["value"]
@@ -256,7 +265,6 @@ Lastly, we investigated the rise in consumption in 2016-2017 by looking at enrol
 We were also curious to see which features were most relevant in our target variable, `Total Cons. (kwh)`. So, we merged all the data we had available -- climate and utility -- to create a single dataframe for analysis. 
 
 ```{python}
-#| vscode: {languageId: python}
 from functions.functions_manage_data import merge_all_df
 
 df_all_data = merge_all_df([df_avg_temp, df_avg_wind, df_total_prcp])
@@ -265,7 +273,6 @@ df_all_data = merge_all_df([df_avg_temp, df_avg_wind, df_total_prcp])
 Here's what the dataframe looked like after the processing:
 
 ```{python}
-#| vscode: {languageId: python}
 display(HTML(df_all_data.head(10).to_html()))
 ```
 
@@ -291,7 +298,6 @@ In our case, the target variable was the total monthly electricity consumption a
 - total monthly electricity cost
 
 ```{python}
-#| vscode: {languageId: python}
 from functions.functions_f_test import feature_selection
 
 ## Separating the features and the target
@@ -304,14 +310,12 @@ df_results = feature_selection(features, target)
 Here are the results:
 
 ```{python}
-#| vscode: {languageId: python}
 display(HTML(df_results.to_html()))
 ```
 
 To visualize the results, we made a bar plot that shows the F-Scores of different features. 
 
 ```{python}
-#| vscode: {languageId: python}
 from functions.functions_f_test import plot_f_test
 
 plot_f_test(df_results)

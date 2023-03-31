@@ -1,0 +1,26 @@
+mindate,maxdate,name,datacoverage,id
+1781-01-01,2016-03-01,Number of days with greater than or equal to 0.5 inch of precipitation,1,DP05
+1763-01-01,2016-03-01,Number days with maximum temperature greater than or equal 90.0 F,1,DT90
+1763-01-01,2023-02-01,Day Extreme minimum temperature occurred for the period.,1,DYNT
+1840-05-01,2023-02-01,Day the extreme maximum daily snowfall for the period occurred.,1,DYSN
+1781-01-01,2023-02-01,Day Extreme maximum daily precipitation for the period.,1,DYXP
+1763-01-01,2023-02-01,Date Extreme maximum temperature occurred for the period.,1,DYXT
+1763-01-01,2022-01-01,First freeze <= to 32F/0C of the year.,1,FZF0
+1765-01-01,2022-01-01,First freeze <= 28F/-2.2C of the year,1,FZF1
+1767-01-01,2022-01-01,First freeze <= 24F/-4.4C of the year,1,FZF2
+1774-01-01,2022-01-01,First freeze <= 20F/-6.7C of the year,1,FZF3
+1774-01-01,2022-01-01,First freeze <= 16F/-8.9C of the year,1,FZF4
+1763-01-01,2022-01-01,Last freeze <= 32F/0C of the year,1,FZF5
+1763-01-01,2022-01-01,Last freeze <= 28F/-2.2C of the year,1,FZF6
+1763-01-01,2022-01-01,Last freeze <= 24F/-4.4C of the year,1,FZF7
+1766-01-01,2022-01-01,Last freeze <= 20F/-6.7C of the year,1,FZF8
+1767-01-01,2022-01-01,Last freeze <= 16F/-8.9C of the year,1,FZF9
+1781-01-04,2023-03-26,Precipitation,1,HPCP
+1763-01-01,2016-03-01,Monthly Mean minimum temperature,1,MMNT
+1763-01-01,2016-03-01,Monthly Mean maximum temperature,1,MMXT
+1763-01-01,2016-03-01,Monthly mean temperature,1,MNTM
+1857-01-01,2016-03-01,Maximum snow depth,1,MXSD
+1948-01-01,2023-03-26,Peak gust time,1,PGTM
+1781-01-01,2016-03-01,Total precipitation,1,TPCP
+1840-05-01,2016-03-01,Total snow fall,1,TSNW
+1851-05-19,2023-03-26,"Fog, ice fog, or freezing fog (may include heavy fog)",1,WT01
