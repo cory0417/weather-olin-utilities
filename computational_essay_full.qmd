@@ -6,7 +6,7 @@ jupyter: python3
 
 ---
 Author: Daeyoung Kim, Ellen Sun \
-Date: 2023-03-36
+Date: 2023-03-30
 
 ## Introduction
 
@@ -44,7 +44,7 @@ Below is the code to autoreload cells for our own convenience.
 ```{python}
 #| vscode: {languageId: python}
 from os import path
-from functions import tidy_data
+from functions_manage_data import tidy_data
 if path.isfile("data/electricity_FY13_23.csv"):
     print("The utility data is ready!")
 else:
@@ -126,7 +126,7 @@ We chose `TAVG`, `AWND`, and `PRCP` for the datatypes and saved them locally as 
 ```{python}
 #| vscode: {languageId: python}
 from os import path
-from functions import get_data_api
+from functions_manage_data import get_data_api
 
 DATATYPES = ["TAVG", "PRCP", "AWND"]
 
@@ -141,7 +141,7 @@ After storing the information about each datatype into a `.json` file, we flatte
 
 ```{python}
 #| vscode: {languageId: python}
-from functions import flatten_json, join_dataframes
+from functions_manage_data import flatten_json, join_dataframes
 
 df_avg_temp = flatten_json("TAVG")
 df_total_prcp = flatten_json("PRCP")
@@ -161,11 +161,27 @@ Now we can plot each weather datatype against the `total monthly electricity con
 
 ```{python}
 #| vscode: {languageId: python}
-from functions import plot_weather_util_2_plots
+from functions_plot_data import plot_weather_util_2_plots
 
 plot_weather_util_2_plots(df_util_temp)
 plot_weather_util_2_plots(df_util_prcp)
 plot_weather_util_2_plots(df_util_wind)
+```
+
+Next, we put each specific r-value in a table to see the exact correlations between each of the weather datatypes and total monthly electricity consumption:
+
+```{python}
+#| vscode: {languageId: python}
+from functions_manage_data import calc_weather_util_corr
+df_correlation = pd.DataFrame(columns=["weather_datatype", "r_value"])
+
+df_util_weathers = [df_util_temp, df_util_prcp, df_util_wind]
+
+for i, df_util_weather in enumerate(df_util_weathers):
+    df_correlation.at[i, "weather_datatype"] = df_util_weather["datatype"][0]
+    df_correlation.at[i, "r_value"] = calc_weather_util_corr(df_util_weather)
+
+display(HTML(df_correlation.to_html()))
 ```
 
 From these graphs, we noticed three interesting patterns:
@@ -178,7 +194,7 @@ Firstly, we hypothesized that temperature might be correlated with electricity c
 ```{python}
 #| vscode: {languageId: python}
 import matplotlib.pyplot as plt
-from functions import filter_season
+from functions_manage_data import filter_season
 
 SEASON_NAMES = ["Winter", "Spring", "Summer", "Fall"]
 
@@ -228,7 +244,7 @@ We were also curious to see which features were most relevant in our target vari
 
 ```{python}
 #| vscode: {languageId: python}
-from functions import merge_all_df
+from functions_manage_data import merge_all_df
 
 df_all_data = merge_all_df([df_avg_temp, df_avg_wind, df_total_prcp])
 ```
@@ -263,7 +279,7 @@ In our case, the target variable was the total monthly electricity consumption a
 
 ```{python}
 #| vscode: {languageId: python}
-from functions import feature_selection
+from functions_f_test import feature_selection
 
 ## Separating the features and the target
 features = df_all_data.drop(columns=["total_consumption", "year-month"])
@@ -283,7 +299,7 @@ To visualize the results, we made a bar plot that shows the F-Scores of differen
 
 ```{python}
 #| vscode: {languageId: python}
-from functions import plot_f_test
+from functions_f_test import plot_f_test
 
 plot_f_test(df_results)
 ```

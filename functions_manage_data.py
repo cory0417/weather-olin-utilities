@@ -1,24 +1,17 @@
+"""
+File containing helper functions that manage and format data retrieved from
+the weather API and the Olin utility spreadsheet.
+"""
 import json
 import requests
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-from sklearn.feature_selection import SelectKBest, f_regression
-
-plt.rcParams["font.family"] = "Helvetica"
 
 STATION_ID = "GHCND:USW00014739"
 DATASET_ID = "GSOM"
 START_DATE = "2013-04-01"
 END_DATE = "2022-12-31"
 LIMIT = "120"
-
-WEATHER_TITLES = {
-    "TAVG": ("Average Temperature", "Farenheit °", "orange"),
-    "PRCP": ("Total Precipitation", "in", "dodgerblue"),
-    "AWND": ("Average Wind Speed", "mph", "orchid"),
-}
 
 SEASONS = {
     "Winter": ("12", "01", "02"),
@@ -49,9 +42,7 @@ def get_data_api(datatype_id):
         token = file.read()
 
     response = requests.get(url, headers={"token": token})
-
     response_json = response.json()
-
     json_name = f"{datatype_id}.json"
 
     with open("./data/" + json_name, "w", encoding="utf-8") as file:
@@ -93,102 +84,22 @@ def join_dataframes(df_weather, df_util):
     return df_util_weather
 
 
-def plot_weather_util(df_util_weather, ax1):
+def calc_weather_util_corr(df_util_weather):
     """
-    Plots the data from the given pandas dataframe against the total
-    consumption in the Olin utilities spreadsheet with two different axes.
+    Calculates the r value (representing the correlation) between the values
+    of a certain weather datatype and the total monthly electricity
+    consumption.
 
     Args:
         df_util_weather: a pandas dataframe containing information about a
         specific weather pattern and the utility information.
-        ax1: the first axes in the plot-- an already created subplot passed in
-        from the outside where the plotting will occur.
     Returns:
-        Nothing.
+        A floating point number representing the correlation.
     """
-    weather_title_loc = WEATHER_TITLES[df_util_weather["datatype"].iloc[0]]
-    ax2 = ax1.twinx()
-    ax1.plot(
-        df_util_weather["date"],
-        df_util_weather["value"],
-        color=weather_title_loc[2],
-        label=weather_title_loc[0],
-    )
 
-    ax2.plot(
-        df_util_weather["date"],
-        df_util_weather["total_consumption"],
-        color="seagreen",
-        label="Total Cons.",
-    )
-
-    ax1.set_xlabel("Date", fontsize=14)
-    ax1.set_ylabel(
-        f"{weather_title_loc[0]} ({weather_title_loc[1]})",
-        color="black",
-        fontsize=14,
-    )
-    ax1.tick_params(axis="y", labelcolor="black")
-    ax2.set_ylabel(
-        "\nTotal Electricity Consumption (kWh)", color="black", fontsize=14
-    )
-    ax2.tick_params(axis="y", labelcolor="black")
-    ax1.legend(loc="upper left")
-    ax2.legend(loc="upper right")
-    ax1.xaxis.set_major_locator(mdates.MonthLocator(bymonth=(1, 13)))
-    ax1.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
-
-
-def plot_weather_util_corr(df_util_weather, subplot):
-    """
-    Plots the weather datatype against the total consumption in Olin
-    electricity, with consumption on the x-axis and the weathertype
-    on the y-axis. Includes a calculated linear trendline.
-
-    Args:
-        df_util_weather: a pandas dataframe containing information about a
-        specific weather pattern and the utility information.
-        subplot: an already-created subplot where the plotting will occur.
-    Returns:
-        Nothing.
-    """
-    weather_title_loc = WEATHER_TITLES[df_util_weather["datatype"].iloc[0]]
     weather_data = df_util_weather["value"]
     consumption_data = df_util_weather["total_consumption"].astype(float)
-    subplot.scatter(weather_data, consumption_data, color=weather_title_loc[2])
-    subplot.set_xlabel(
-        f"{weather_title_loc[0]} ({weather_title_loc[1]})", fontsize=14
-    )
-    poly_fit = np.polyfit(weather_data, consumption_data, 1)
-    equation_fit = np.poly1d(poly_fit)
-    subplot.plot(
-        weather_data, equation_fit(weather_data), color="red", label="Trendline"
-    )
-    subplot.legend(loc="upper left")
-
-
-def plot_weather_util_2_plots(df_util_weather):
-    """
-    Plots two subplots of the weather datatype against consumption with
-    the first being both on the same axes and the second being consumption on
-    the x-axis and weather data on y-axis.
-
-    Args:
-        df_util_weather: a pandas dataframe containing information about a
-        specific weather pattern and the utility information.
-    Returns:
-        Nothing.
-    """
-    weather_title_loc = WEATHER_TITLES[df_util_weather["datatype"].iloc[0]]
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
-    plot_weather_util(df_util_weather, ax1)
-    plot_weather_util_corr(df_util_weather, ax2)
-    fig.tight_layout(pad=5)
-    plt.subplots_adjust(wspace=0.5)
-    fig.suptitle(
-        f"{weather_title_loc[0]} vs. Total Electricity Consumption", fontsize=20
-    )
-    plt.show()
+    return np.corrcoef(weather_data, consumption_data)[0][1]
 
 
 def filter_season(season, df_util_weather):
@@ -197,6 +108,8 @@ def filter_season(season, df_util_weather):
     from a specific season.
     Args:
         season: a string representing the desired season.
+        df_util_weather: a pandas dataframe containing information about a
+        specific weather pattern and the utility information.
     Returns:
         A dataframe containing the joint weather and utilities data only from
         the specified season.
@@ -324,66 +237,3 @@ def merge_all_df(list_df_weather):
     df_all_data["month"] = pd.to_datetime(df_all_data["year-month"]).dt.month
 
     return df_all_data
-
-
-def feature_selection(features, target):
-    """
-    Compute the F-scores and p-values of `features` for `target`.
-
-    Create an instance of `SelectKBest` from sklearn module using
-    `f_regression` as a parameter. Fit the features to the target and retrieve
-    the f-scores and p-values. Return them with the features as a pandas
-    dataframe.
-
-    Args:
-        features: a pandas dataframe that represents each feature as its
-        column.
-        target: a pandas dataframe of a single column that represents the
-        target variable.
-    Returns:
-        df_results: a pandas dataframe that contains the f-score and p-value
-        for each feature.
-    """
-    # Create an instance of SelectKBest using the f_regression method
-    selector_k_best = SelectKBest(score_func=f_regression, k="all")
-    selector_k_best.fit_transform(features, target)
-    df_results = pd.DataFrame(
-        {
-            "Feature": features.columns,
-            "F-Score": selector_k_best.scores_,
-            "p-value": selector_k_best.pvalues_,
-        }
-    )
-    df_results = df_results.sort_values("F-Score", ascending=False)
-
-    return df_results
-
-
-def plot_f_test(df_results):
-    """
-    Displays a horizontal bar plot of the f-scores with all features.
-
-    Args:
-        df_results: a pandas dataframe of the results of the ANOVA F-test using
-        the `f_regression` method in sklearn module.
-    Returns:
-        Nothing.
-    """
-    df_results = df_results.sort_values("F-Score", ascending=True)
-    ylabels = [
-        "Monthly Total\n Precipitation",
-        "Month of\n Year",
-        "Time of\n Peak Demand",
-        "Monthly Average\n Wind Speed",
-        "Monthly Average\n Temperature",
-        "Total Monthly\n Electricity Cost",
-    ]
-
-    _, ax1 = plt.subplots()
-    ax1.barh(ylabels, df_results["F-Score"])
-    ax1.set_ylabel("Features")
-    ax1.set_xlabel("F-Score")
-    ax1.set_title(
-        "F-Score of Features for \nTotal Monthly Electricity Consumption"
-    )
-    plt.show()
