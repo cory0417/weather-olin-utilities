@@ -9,7 +9,7 @@ import pandas as pd
 import pytest
 
 spec = importlib.util.spec_from_file_location(
-    "function", "./functions_manage_data.py"
+    "function", "./functions/functions_manage_data.py"
 )
 func_manage_data = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(func_manage_data)

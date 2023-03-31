@@ -8,13 +8,13 @@ from os import path
 import pytest
 
 spec = importlib.util.spec_from_file_location(
-    "function", "./functions_manage_data.py"
+    "function", "./functions/functions_manage_data.py"
 )
 func_manage_data = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(func_manage_data)
 
 spec = importlib.util.spec_from_file_location(
-    "function", "./functions_f_test.py"
+    "function", "./functions/functions_f_test.py"
 )
 func_f_test = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(func_f_test)

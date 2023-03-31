@@ -11,9 +11,7 @@ Date: 2023-03-30
 ## Introduction
 
 For our Software Design midterm project, we decided to analyze the patterns in the giant excel sheet of utility bill of Olin through the lens of our local climate. The excel sheet contained the electricity bill from FY01 to November of FY23 with variety of information like date, total electricity consumption, time of peak demand, supply cost, demand-response, and many more. 
-<p align="center">
-    <img src="images/excel_sheet.png" height="500" alt="Olin's electricity bill excel sheet" />
-</p>
+
 
 Our central research question was:
 >How does the variation in Boston climate affect Olin College’s electricity consumption?
@@ -22,7 +20,7 @@ Our central research question was:
 
 To make our dataset useful for analysis, we need to first *tidy* the data. 
 
-Currently, the spreadsheet has rows as variables and columns as observation. The observations are also spread across different tabs by their fiscal year. There are empty rows in the sheet as well as non-uniform nomenclature. The format of values are not standarized and vary across cells within the rows. Thus, the data right now is not very useful to us.  
+Currently, the spreadsheet has rows as variables and columns as observation. The observations are also spread across different tabs by their fiscal year. There are empty rows in the sheet as well as non-uniform nomenclature. The format of values are not standarized and vary across cells within the rows. Thus, the data right now is not very useful to us. We've also deliberately chose to only get the data of the past ten years (i.e. FY13-23) since the climate API has limited the requests for the past 10 years. 
 
 There are 3 rules to tidy data:
 >1. Every column is a variable.
@@ -44,7 +42,7 @@ Below is the code to autoreload cells for our own convenience.
 ```{python}
 #| vscode: {languageId: python}
 from os import path
-from functions_manage_data import tidy_data
+from functions.functions_manage_data import tidy_data
 
 PATH_UTILITY = "data/electricity_FY13_23.csv"
 PATH_UTILITY_JITTERED = "data/electricity_FY13_23_jittered.csv"
@@ -134,7 +132,7 @@ We chose `TAVG`, `AWND`, and `PRCP` for the datatypes and saved them locally as 
 ```{python}
 #| vscode: {languageId: python}
 from os import path
-from functions_manage_data import get_data_api
+from functions.functions_manage_data import get_data_api
 
 DATATYPES = ["TAVG", "PRCP", "AWND"]
 
@@ -149,7 +147,7 @@ After storing the information about each datatype into a `.json` file, we flatte
 
 ```{python}
 #| vscode: {languageId: python}
-from functions_manage_data import flatten_json, join_dataframes
+from functions.functions_manage_data import flatten_json, join_dataframes
 
 df_avg_temp = flatten_json("TAVG")
 df_total_prcp = flatten_json("PRCP")
@@ -168,7 +166,7 @@ Now we can plot each weather datatype against the `total monthly electricity con
 
 ```{python}
 #| vscode: {languageId: python}
-from functions_plot_data import plot_weather_util_2_plots
+from functions.functions_plot_data import plot_weather_util_2_plots
 
 plot_weather_util_2_plots(df_util_temp)
 plot_weather_util_2_plots(df_util_prcp)
@@ -179,7 +177,7 @@ Next, we put each specific `Pearson's correlation coefficient` in a table to see
 
 ```{python}
 #| vscode: {languageId: python}
-from functions_manage_data import calc_weather_util_corr
+from functions.functions_manage_data import calc_weather_util_corr
 df_correlation = pd.DataFrame(columns=["weather_datatype", "pearson_r_value"])
 
 df_util_weathers = [df_util_temp, df_util_prcp, df_util_wind]
@@ -203,7 +201,7 @@ Firstly, we hypothesized that temperature might be correlated with electricity c
 ```{python}
 #| vscode: {languageId: python}
 import matplotlib.pyplot as plt
-from functions_manage_data import filter_season
+from functions.functions_manage_data import filter_season
 
 SEASON_NAMES = ["Winter", "Spring", "Summer", "Fall"]
 
@@ -241,7 +239,7 @@ plt.title("Average Monthly Wind Speed vs Average Monthly Temperature")
 
 z = np.polyfit(avg_temp, avg_wind, 1)
 p = np.poly1d(z)
-plt.plot(avg_temp, p(avg_temp), color="red", label="Best Fit Line")
+plt.plot(avg_temp, p(avg_temp), color="red", label="Line of Best Fit")
 plt.legend()
 plt.show()
 
@@ -259,7 +257,7 @@ We were also curious to see which features were most relevant in our target vari
 
 ```{python}
 #| vscode: {languageId: python}
-from functions_manage_data import merge_all_df
+from functions.functions_manage_data import merge_all_df
 
 df_all_data = merge_all_df([df_avg_temp, df_avg_wind, df_total_prcp])
 ```
@@ -294,7 +292,7 @@ In our case, the target variable was the total monthly electricity consumption a
 
 ```{python}
 #| vscode: {languageId: python}
-from functions_f_test import feature_selection
+from functions.functions_f_test import feature_selection
 
 ## Separating the features and the target
 features = df_all_data.drop(columns=["total_consumption", "year-month"])
@@ -314,7 +312,7 @@ To visualize the results, we made a bar plot that shows the F-Scores of differen
 
 ```{python}
 #| vscode: {languageId: python}
-from functions_f_test import plot_f_test
+from functions.functions_f_test import plot_f_test
 
 plot_f_test(df_results)
 ```

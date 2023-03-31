@@ -16,7 +16,7 @@ This repo is meant to:
 
 # Structure
 
-In the root directory are the folders `data/` and `tests/`, which contain all necessary dataset to run the jupyter notebook `computational_essay.ipynb`, and the unit tests, respectively. There's also an `images/` folder to store images used in the jupyter notebook.
+In the root directory are the folders `data/` and `tests/`, which contain all necessary dataset to run the jupyter notebook `computational_essay.ipynb`, and the unit tests, respectively. There's also an `images/` folder to store images used in the jupyter notebook. Finally, there a `functions/` folder, which contains all the python functions used for the project.  
 
 # Getting Started
 
