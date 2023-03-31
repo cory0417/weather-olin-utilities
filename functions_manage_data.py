@@ -13,6 +13,9 @@ START_DATE = "2013-04-01"
 END_DATE = "2022-12-31"
 LIMIT = "120"
 
+PATH_UTILITY = "data/electricity_FY13_23.csv"
+PATH_UTILITY_JITTERED = "data/electricity_FY13_23_jittered.csv"
+
 SEASONS = {
     "Winter": ("12", "01", "02"),
     "Spring": ("03", "04", "05"),
@@ -221,7 +224,11 @@ def merge_all_df(list_df_weather):
     # Merge another dataframe
 
     # Join the utility data and the weather data
-    df_util = pd.read_csv("./data/electricity_FY13_23.csv")
+    try:
+        df_util = pd.read_csv(PATH_UTILITY)
+    except FileNotFoundError:
+        df_util = pd.read_csv(PATH_UTILITY_JITTERED)
+
     df_all_data = join_dataframes(df_filtered, df_util)
 
     # Drop unnecessary columns
